@@ -2,7 +2,7 @@
 // what to do ? (k/d/s/?) > s
 //
 
-use git2::Repository;
+use git2::{BranchType, Repository};
 use std::io;
 use std::io::{Read, Write};
 
@@ -35,7 +35,7 @@ fn main() -> Result<(), Error> {
 fn git() -> Result<(), Error> {
     let mut stdout = io::stdout();
     let repo = Repository::open_from_env()?;
-    for branch in repo.branches(None)? {
+    for branch in repo.branches(Some(BranchType::Remote))? {
         let (branch, branch_type) = branch?;
         let name = branch.name_bytes()?;
         stdout.write_all(name)?;
