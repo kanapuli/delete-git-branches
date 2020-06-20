@@ -35,3 +35,9 @@ enum Error {
     CrosstermError(crossterm::ErrorKind),
     IoError(io::Error),
 }
+
+impl From<crossterm::ErrorKind> for Error {
+    fn from(error: crossterm::ErrorKind) -> Self {
+        Error::CrosstermError(error)
+    }
+}
