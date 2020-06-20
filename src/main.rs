@@ -2,7 +2,6 @@
 // what to do ? (k/d/s/?) > s
 //
 
-use std::fmt;
 use std::io;
 use std::io::{Read, Write};
 
@@ -31,38 +30,10 @@ fn main() -> Result<(), Error> {
     Ok(())
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 enum Error {
-    CrosstermError(crossterm::ErrorKind),
-    IoError(io::Error),
-}
-
-impl From<crossterm::ErrorKind> for Error {
-    fn from(error: crossterm::ErrorKind) -> Self {
-        Error::CrosstermError(error)
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(error: io::Error) -> Self {
-        Error::IoError(error)
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::CrosstermError(inner) => write!(f, "{}", inner),
-            Error::IoError(inner) => write!(f, "{}", inner),
-        }
-    }
-}
-
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Error::CrosstermError(inner) => Some(inner),
-            Error::IoError(inner) => Some(inner),
-        }
-    }
+    #[error(transparent)]
+    CrosstermError(#[from] crossterm::ErrorKind),
+    #[error(transparent)]
+    IoError(#[from] io::Error),
 }
