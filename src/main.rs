@@ -2,6 +2,7 @@
 // what to do ? (k/d/s/?) > s
 //
 
+use std::fmt;
 use std::io;
 use std::io::{Read, Write};
 
@@ -39,5 +40,14 @@ enum Error {
 impl From<crossterm::ErrorKind> for Error {
     fn from(error: crossterm::ErrorKind) -> Self {
         Error::CrosstermError(error)
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::CrosstermError(inner) => write!(f, "{}", inner),
+            Error::IoError(inner) => write!(f, "{}", inner),
+        }
     }
 }
