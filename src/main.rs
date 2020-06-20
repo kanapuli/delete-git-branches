@@ -40,6 +40,8 @@ fn git() -> Result<(), Error> {
         let name = branch.name_bytes()?;
         stdout.write_all(name)?;
         write!(stdout, "\n\r")?;
+        let commit = branch.get().peel_to_commit()?;
+        println!("{}", commit.id());
     }
     Ok(())
 }
