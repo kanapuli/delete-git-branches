@@ -5,7 +5,7 @@
 use std::io;
 use std::io::{Read, Write};
 
-fn main() -> Result<(), crossterm::ErrorKind> {
+fn main() -> Result<(), Error> {
     crossterm::terminal::enable_raw_mode()?;
     let mut stdout = io::stdout();
     //    stdout.write_all(b"hello world\n").unwrap();
@@ -28,4 +28,10 @@ fn main() -> Result<(), crossterm::ErrorKind> {
     }
     crossterm::terminal::disable_raw_mode()?;
     Ok(())
+}
+
+#[derive(Debug)]
+enum Error {
+    CrosstermError(crossterm::ErrorKind),
+    IoError(io::Error),
 }
