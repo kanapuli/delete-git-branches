@@ -2,6 +2,8 @@
 // what to do ? (k/d/s/?) > s
 //
 
+use chrono::prelude::*;
+use chrono::Duration;
 use git2::{BranchType, Repository};
 use std::io;
 use std::io::{Read, Write};
@@ -36,12 +38,16 @@ fn git() -> Result<(), Error> {
     let mut stdout = io::stdout();
     let repo = Repository::open_from_env()?;
     for branch in repo.branches(Some(BranchType::Remote))? {
-        let (branch, branch_type) = branch?;
+        let (branch, _branch_type) = branch?;
         let name = branch.name_bytes()?;
         stdout.write_all(name)?;
         write!(stdout, "\n\r")?;
         let commit = branch.get().peel_to_commit()?;
         println!("{}", commit.id());
+        let time = commit.time();
+        let offset_time = Duration::minutes(i64::from(time.offset_minutes()));
+        let time = NaiveDateTime::from_timestamp(time.seconds(), 0) + offset_time;
+        println!("{}", time);
     }
     Ok(())
 }
