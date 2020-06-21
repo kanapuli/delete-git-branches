@@ -13,7 +13,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 fn main() -> Result<(), Error> {
     crossterm::terminal::enable_raw_mode()?;
     let repo = Repository::open_from_env()?;
-    git(repo)?;
+    get_branches(repo)?;
     let mut stdout = io::stdout();
     //    stdout.write_all(b"hello world\n").unwrap();
     let mut stdin = io::stdin().bytes();
@@ -39,7 +39,7 @@ fn main() -> Result<(), Error> {
 
 struct Branch {}
 
-fn git(repo: Repository) -> Result<Vec<Branch>> {
+fn get_branches(repo: Repository) -> Result<Vec<Branch>> {
     //let mut stdout = io::stdout();
     for branch in repo.branches(Some(BranchType::Remote))? {
         let (branch, _branch_type) = branch?;
