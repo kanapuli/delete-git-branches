@@ -44,7 +44,8 @@ struct Branch {
 }
 
 fn get_branches(repo: Repository) -> Result<Vec<Branch>> {
-    repo.branches(Some(BranchType::Remote))?
+    let mut branches = repo
+        .branches(Some(BranchType::Remote))?
         .map(|branch| {
             let (branch, _) = branch?;
 
@@ -62,7 +63,9 @@ fn get_branches(repo: Repository) -> Result<Vec<Branch>> {
                 name,
             })
         })
-        .collect()
+        .collect::<Result<Vec<_>>>()?;
+    branches.sort_by_key(|branch| branch.time);
+    Ok(branches)
 }
 #[derive(Debug, thiserror::Error)]
 enum Error {
