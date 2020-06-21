@@ -40,6 +40,7 @@ fn main() -> Result<(), Error> {
 struct Branch {
     id: Oid,
     time: NaiveDateTime,
+    name: String,
 }
 
 fn get_branches(repo: Repository) -> Result<Vec<Branch>> {
@@ -47,16 +48,20 @@ fn get_branches(repo: Repository) -> Result<Vec<Branch>> {
 
     for branch in repo.branches(Some(BranchType::Remote))? {
         let (branch, _branch_type) = branch?;
-        let name = branch.name_bytes()?;
+        let name = String::from_utf8(branch.name_bytes()?.to_vec())?;
+
         let commit = branch.get().peel_to_commit()?;
         println!("{}", commit.id());
+
         let time = commit.time();
         let offset_time = Duration::minutes(i64::from(time.offset_minutes()));
         let time = NaiveDateTime::from_timestamp(time.seconds(), 0) + offset_time;
         println!("{}", time);
+
         branches.push(Branch {
             id: commit.id(),
             time,
+            name,
         })
     }
     Ok(branches)
@@ -71,4 +76,7 @@ enum Error {
 
     #[error(transparent)]
     GitError(#[from] git2::Error),
+
+    #[error(transparent)]
+    FromUtf8Error(#[from] std::string::FromUtf8Error),
 }
