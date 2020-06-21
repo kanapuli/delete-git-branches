@@ -13,12 +13,17 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 fn main() -> Result<(), Error> {
     crossterm::terminal::enable_raw_mode()?;
     let repo = Repository::open_from_env()?;
-    get_branches(repo)?;
     let mut stdout = io::stdout();
-    //    stdout.write_all(b"hello world\n").unwrap();
     let mut stdin = io::stdin().bytes();
-    loop {
-        write!(stdout, "Type something > ")?;
+    for branch in get_branches(&repo)? {
+        write!(
+            stdout,
+            "'{}' ({}) last commit at '{}' (k/d/q/?) > ",
+            branch.name, branch.id, branch.time
+        )?;
+        // k for keep
+        // d for delete
+        // ? for help
         stdout.flush()?;
         let byte = match stdin.next() {
             Some(byte) => byte?,
@@ -43,7 +48,7 @@ struct Branch {
     name: String,
 }
 
-fn get_branches(repo: Repository) -> Result<Vec<Branch>> {
+fn get_branches(repo: &Repository) -> Result<Vec<Branch>> {
     let mut branches = repo
         .branches(Some(BranchType::Remote))?
         .map(|branch| {
@@ -64,7 +69,7 @@ fn get_branches(repo: Repository) -> Result<Vec<Branch>> {
             })
         })
         .collect::<Result<Vec<_>>>()?;
-    branches.sort_by_key(|branch| branch.time);
+    branches.sort_unstable_by_key(|branch| branch.time);
     Ok(branches)
 }
 #[derive(Debug, thiserror::Error)]
