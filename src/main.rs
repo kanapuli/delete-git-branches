@@ -46,24 +46,26 @@ struct Branch {
 fn get_branches(repo: Repository) -> Result<Vec<Branch>> {
     let mut branches: Vec<Branch> = vec![];
 
-    for branch in repo.branches(Some(BranchType::Remote))? {
-        let (branch, _branch_type) = branch?;
-        let name = String::from_utf8(branch.name_bytes()?.to_vec())?;
+    let branches = repo
+        .branches(Some(BranchType::Remote))?
+        .map(|branch| -> Result<_> {
+            let (branch, _) = branch?;
 
-        let commit = branch.get().peel_to_commit()?;
-        println!("{}", commit.id());
+            let name = String::from_utf8(branch.name_bytes()?.to_vec())?;
 
-        let time = commit.time();
-        let offset_time = Duration::minutes(i64::from(time.offset_minutes()));
-        let time = NaiveDateTime::from_timestamp(time.seconds(), 0) + offset_time;
-        println!("{}", time);
+            let commit = branch.get().peel_to_commit()?;
 
-        branches.push(Branch {
-            id: commit.id(),
-            time,
-            name,
+            let time = commit.time();
+            let offset_time = Duration::minutes(i64::from(time.offset_minutes()));
+            let time = NaiveDateTime::from_timestamp(time.seconds(), 0) + offset_time;
+
+            Ok(Branch {
+                id: commit.id(),
+                time,
+                name,
+            })
         })
-    }
+        .collect::<Result<_>>()?;
     Ok(branches)
 }
 #[derive(Debug, thiserror::Error)]
