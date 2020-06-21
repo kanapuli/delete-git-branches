@@ -4,7 +4,7 @@
 
 use chrono::prelude::*;
 use chrono::Duration;
-use git2::{BranchType, Repository};
+use git2::{BranchType, Oid, Repository};
 use std::io;
 use std::io::{Read, Write};
 
@@ -37,24 +37,29 @@ fn main() -> Result<(), Error> {
     Ok(())
 }
 
-struct Branch {}
+struct Branch {
+    id: Oid,
+    time: NaiveDateTime,
+}
 
 fn get_branches(repo: Repository) -> Result<Vec<Branch>> {
-    //let mut stdout = io::stdout();
+    let mut branches: Vec<Branch> = vec![];
+
     for branch in repo.branches(Some(BranchType::Remote))? {
         let (branch, _branch_type) = branch?;
         let name = branch.name_bytes()?;
-        //stdout.write_all(name)?;
-        //write!(stdout, "\n\r")?;
         let commit = branch.get().peel_to_commit()?;
         println!("{}", commit.id());
         let time = commit.time();
         let offset_time = Duration::minutes(i64::from(time.offset_minutes()));
         let time = NaiveDateTime::from_timestamp(time.seconds(), 0) + offset_time;
         println!("{}", time);
+        branches.push(Branch {
+            id: commit.id(),
+            time,
+        })
     }
-    //    Ok(())
-    todo!()
+    Ok(branches)
 }
 #[derive(Debug, thiserror::Error)]
 enum Error {
