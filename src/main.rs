@@ -8,9 +8,12 @@ use git2::{BranchType, Repository};
 use std::io;
 use std::io::{Read, Write};
 
+type Result<T, E = Error> = std::result::Result<T, E>;
+
 fn main() -> Result<(), Error> {
     crossterm::terminal::enable_raw_mode()?;
-    git()?;
+    let repo = Repository::open_from_env()?;
+    git(repo)?;
     let mut stdout = io::stdout();
     //    stdout.write_all(b"hello world\n").unwrap();
     let mut stdin = io::stdin().bytes();
@@ -34,14 +37,15 @@ fn main() -> Result<(), Error> {
     Ok(())
 }
 
-fn git() -> Result<(), Error> {
-    let mut stdout = io::stdout();
-    let repo = Repository::open_from_env()?;
+struct Branch {}
+
+fn git(repo: Repository) -> Result<Vec<Branch>> {
+    //let mut stdout = io::stdout();
     for branch in repo.branches(Some(BranchType::Remote))? {
         let (branch, _branch_type) = branch?;
         let name = branch.name_bytes()?;
-        stdout.write_all(name)?;
-        write!(stdout, "\n\r")?;
+        //stdout.write_all(name)?;
+        //write!(stdout, "\n\r")?;
         let commit = branch.get().peel_to_commit()?;
         println!("{}", commit.id());
         let time = commit.time();
@@ -49,7 +53,8 @@ fn git() -> Result<(), Error> {
         let time = NaiveDateTime::from_timestamp(time.seconds(), 0) + offset_time;
         println!("{}", time);
     }
-    Ok(())
+    //    Ok(())
+    todo!()
 }
 #[derive(Debug, thiserror::Error)]
 enum Error {
