@@ -44,11 +44,8 @@ struct Branch {
 }
 
 fn get_branches(repo: Repository) -> Result<Vec<Branch>> {
-    let mut branches: Vec<Branch> = vec![];
-
-    let branches = repo
-        .branches(Some(BranchType::Remote))?
-        .map(|branch| -> Result<_> {
+    repo.branches(Some(BranchType::Remote))?
+        .map(|branch| {
             let (branch, _) = branch?;
 
             let name = String::from_utf8(branch.name_bytes()?.to_vec())?;
@@ -65,8 +62,7 @@ fn get_branches(repo: Repository) -> Result<Vec<Branch>> {
                 name,
             })
         })
-        .collect::<Result<_>>()?;
-    Ok(branches)
+        .collect()
 }
 #[derive(Debug, thiserror::Error)]
 enum Error {
