@@ -86,3 +86,10 @@ enum Error {
     #[error(transparent)]
     FromUtf8Error(#[from] std::string::FromUtf8Error),
 }
+
+enum BranchAction {
+    Keep,
+    Delete,
+    Quit,
+    Help,
+}
