@@ -1,95 +1,48 @@
-// git feature
-// what to do ? (k/d/s/?) > s
-//
+#![feature(io_read_to_string)]
+use git2::{BranchType, Repository};
+use std::{env, io};
+fn main() -> io::Result<()> {
+    let path = env::current_dir()?;
+    let repo = match Repository::open(path) {
+        Ok(repo) => repo,
+        Err(e) => panic!("Error while opening the repository path: {}", e),
+    };
 
-use chrono::prelude::*;
-use chrono::Duration;
-use git2::{BranchType, Oid, Repository};
-use std::io;
-use std::io::{Read, Write};
+    let head_ref = repo.head().unwrap();
 
-type Result<T, E = Error> = std::result::Result<T, E>;
+    let head = match head_ref.peel_to_commit() {
+        Ok(head) => head,
+        Err(e) => panic!("Error while reading the head commit: {}", e),
+    };
 
-fn main() -> Result<(), Error> {
-    crossterm::terminal::enable_raw_mode()?;
-    let repo = Repository::open_from_env()?;
-    let mut stdout = io::stdout();
-    let mut stdin = io::stdin().bytes();
-    for branch in get_branches(&repo)? {
-        write!(
-            stdout,
-            "'{}' ({}) last commit at '{}' (k/d/q/?) > ",
-            branch.name, branch.id, branch.time
-        )?;
-        // k for keep
-        // d for delete
-        // ? for help
-        stdout.flush()?;
-        let byte = match stdin.next() {
-            Some(byte) => byte?,
-            None => break,
-        };
-        let c = char::from(byte);
-        if c == 'q' {
-            write!(stdout, "You typed '{}' to quit\n\r", c)?;
-            stdout.flush()?;
-            break;
+    let branches = repo.branches(Some(BranchType::Local));
+
+    for branch in branches.unwrap() {
+        let (mut b, t) = branch.unwrap();
+        if t == BranchType::Local {
+            match b.get().name() {
+                Some(b) => {
+                    if b == "refs/heads/master" {
+                        continue;
+                    } else {
+                        println!("Checking {:?}", b)
+                    }
+                }
+                None => (),
+            }
+
+            let target = match b.get().peel_to_commit() {
+                Ok(target) => target,
+                Err(e) => panic!("Error while getting the target commit: {}", e),
+            };
+            let merged = repo.merge_base(head.id(), target.id()).unwrap();
+            println!("=>    {:?} - {}", head.id(), merged);
+            if merged == head.id() {
+                println!("deleteing branch {:?}", b.get().name());
+                let _ = b.delete().unwrap();
+            }
         }
-        write!(stdout, "You typed '{}'\n\r", c)?;
-        stdout.flush()?;
     }
-    crossterm::terminal::disable_raw_mode()?;
+
     Ok(())
-}
-
-struct Branch {
-    id: Oid,
-    time: NaiveDateTime,
-    name: String,
-}
-
-fn get_branches(repo: &Repository) -> Result<Vec<Branch>> {
-    let mut branches = repo
-        .branches(Some(BranchType::Remote))?
-        .map(|branch| {
-            let (branch, _) = branch?;
-
-            let name = String::from_utf8(branch.name_bytes()?.to_vec())?;
-
-            let commit = branch.get().peel_to_commit()?;
-
-            let time = commit.time();
-            let offset_time = Duration::minutes(i64::from(time.offset_minutes()));
-            let time = NaiveDateTime::from_timestamp(time.seconds(), 0) + offset_time;
-
-            Ok(Branch {
-                id: commit.id(),
-                time,
-                name,
-            })
-        })
-        .collect::<Result<Vec<_>>>()?;
-    branches.sort_unstable_by_key(|branch| branch.time);
-    Ok(branches)
-}
-#[derive(Debug, thiserror::Error)]
-enum Error {
-    #[error(transparent)]
-    CrosstermError(#[from] crossterm::ErrorKind),
-
-    #[error(transparent)]
-    IoError(#[from] io::Error),
-
-    #[error(transparent)]
-    GitError(#[from] git2::Error),
-
-    #[error(transparent)]
-    FromUtf8Error(#[from] std::string::FromUtf8Error),
-}
-
-enum BranchAction {
-    Keep,
-    Delete,
-    Quit,
-    Help,
 }
